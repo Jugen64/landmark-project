@@ -52,8 +52,8 @@ def country_to_landmarks_fxn(path, landmark_to_country):
 
 
 # --- vvv filters COUNTRIES by number of unique LANDMARKS vvv --- #
-def filter_countries(country_to_landmarks):
-    remaining_countries = {x for x in country_to_landmarks.keys() if len(country_to_landmarks[x]) > MIN_LANDMARKS }
+def filter_countries(country_to_landmarks, threshold):
+    remaining_countries = {x for x in country_to_landmarks.keys() if len(country_to_landmarks[x]) > threshold }
     print(f"remaining_countries = {remaining_countries}")
     print(f"country pool size: {len(remaining_countries)}")
     return remaining_countries
@@ -100,7 +100,8 @@ def main():
     country_to_landmarks = country_to_landmarks_fxn(GLDV2_CSV_PATH, landmark_to_country)
 
     # --- vvv filters COUNTRIES by number of unique LANDMARKS vvv --- #
-    remaining_countries = filter_countries(country_to_landmarks)
+    remaining_countries = filter_countries(country_to_landmarks, MIN_LANDMARKS)
+    print(f"remaining countries: {remaining_countries}")
     
     # --- vvv associates one EXAMPLE PHOTO to each LANDMARK --- #
     landmark_to_example, filtered_landmarks = landmark_to_single_photo(GLDV2_CSV_PATH)
@@ -109,7 +110,6 @@ def main():
     # --- vvv writes [photo_id, landmark_id, country_name] (1 per. landmark) to METADAT_OUT_PATH--- #
     combine_and_write_out(METADATA_OUT_PATH, landmark_to_example, landmark_to_country)
     
-
     print(f"Process completed.")
 
 
