@@ -2,7 +2,7 @@ import pandas as pd
 from pathlib import Path
 import csv
 
-RAW_ROOT = Path("/Users/jblee/Documents/Code/projects/datasets/landmark_to_country").expanduser()
+RAW_ROOT = Path("~/Documents/Code/projects/datasets/landmark_to_country").expanduser()
 PARQUET_PATH = RAW_ROOT / "landmark_to_country.parquet"
 CSV_OUT_PATH = RAW_ROOT / "landmark_to_country.csv"
 

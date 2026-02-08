@@ -3,8 +3,9 @@ from pathlib import Path
 from collections import defaultdict
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+DATASET_DIR = Path("~/Documents/Code/projects/datasets").expanduser()
+
 CSV_OUT_PATH = PROJECT_ROOT / "data" / "processed" / "metadata.csv"
-DATASET_DIR = Path("/Users/jblee/Documents/Code/projects/datasets").expanduser()
 
 CSV_IN_PATH = DATASET_DIR  / "gldv2_micro/gldv2_micro.csv"
 IMAGE_DIR = DATASET_DIR / "gldv2_micro/images"
@@ -45,7 +46,8 @@ def main():
         for row in reader:
             image_filename = row[0]
             landmark_id = row[1]
-            print(f"filename={image_filename}, landmark_id={landmark_id}")
+            if landmark_id not in landmark_to_country:
+                continue
 
             image_path = IMAGE_DIR / f"{image_filename}"
             if not image_path.exists():
