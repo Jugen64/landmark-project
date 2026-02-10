@@ -1,0 +1,31 @@
+from torch.utils.data import DataLoader
+from src.datasets import landmark_image_dataset
+from src.utils.transforms import get_transforms, get_train_transform, get_eval_transform
+
+from src.utils import data_utils
+from pathlib import Path
+
+train_transform = get_train_transform()
+val_transform   = get_eval_transform()
+
+
+DATASET_DIR = Path("~/Documents/Code/projects/datasets").expanduser()
+IMAGE_DIR = DATASET_DIR / "gldv2_micro/images"
+
+SPLIT_DIR = Path("~/Documents/Code/projects/landmark_project/data/processed/splits").expanduser()
+TRAIN_IMAGES = SPLIT_DIR / "train_images.txt"
+
+def build_dataloader(image_paths, labels, split, batch_size):
+    dataset = landmark_image_dataset.LandmarkDataset(
+        image_paths=image_paths,
+        labels=labels,
+        transform=train_transform,
+    )
+
+    return DataLoader(
+        dataset,
+        batch_size=batch_size,
+        shuffle=(split == "train"),
+        num_workers=4,
+        pin_memory=False,
+    )
