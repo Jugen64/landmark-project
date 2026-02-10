@@ -7,7 +7,6 @@ PARQUET_PATH = RAW_ROOT / "landmark_to_country.parquet"
 CSV_OUT_PATH = RAW_ROOT / "landmark_to_country.csv"
 
 
-
 def main():
     df = pd.read_parquet(PARQUET_PATH)
     print(df.columns)
