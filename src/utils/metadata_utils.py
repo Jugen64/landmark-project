@@ -234,5 +234,17 @@ def write_splits(train_set, val_set, test_set):
         for f in file_outs.values():
             f.close()
 
+def split_to_list(path):
+    res = []
+    with (open(path, 'r', newline='') as csv_in):
+
+        list_reader = csv.reader(csv_in)
+        for row in list_reader:
+            name = row[0]
+            res.append(name)
+
+    print(res)
+    return res
+
 if __name__ == "__main__":
     print("hello.")

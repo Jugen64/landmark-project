@@ -2,7 +2,7 @@ from torch.utils.data import DataLoader
 from src.datasets import landmark_image_dataset
 from src.utils.transforms import get_transforms, get_train_transform, get_eval_transform
 
-from src.utils import data_utils
+from src.utils import metadata_utils
 from pathlib import Path
 
 train_transform = get_train_transform()

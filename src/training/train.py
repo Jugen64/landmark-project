@@ -6,7 +6,7 @@ from src.dataloaders import landmark_dataloader
 from src.models.landmark_classifier import LandmarkClassifier
 from src.training.validate import run_validation
 
-from src.utils import data_utils
+from src.utils import metadata_utils
 from pathlib import Path
 
 train_transform = get_train_transform()
@@ -16,16 +16,23 @@ val_transform   = get_eval_transform()
 DATASET_DIR = Path("~/Documents/Code/projects/datasets").expanduser()
 IMAGE_DIR = DATASET_DIR / "gldv2_micro/images"
 
-SPLIT_DIR = Path("~/Documents/Code/projects/landmark_project/data/processed/splits").expanduser()
+SPLIT_DIR = Path("~/Documents/Code/projects/landmark_project/data/splits").expanduser()
 TRAIN_IMAGES = SPLIT_DIR / "train_images.txt"
+TRAIN_LABELS = SPLIT_DIR / "train_countries.txt"
 VAL_IMAGES = SPLIT_DIR / "val_images.txt"
+VAL_LABELS = SPLIT_DIR / "val_countries.txt"
 
 if __name__ == "__main__":
-    train_data_list = data_utils.split_to_list(TRAIN_IMAGES)
-    val_data_list = data_utils.split_to_list(VAL_IMAGES)
-    country_list = data_utils.metadata_countries()
-    training_loader = landmark_dataloader.build_dataloader(train_data_list, country_list, "train", 100)
-    val_loader = landmark_dataloader.build_dataloader(train_data_list, country_list, "train", 100)
+    train_image_list = metadata_utils.split_to_list(TRAIN_IMAGES)
+    train_label_list = metadata_utils.split_to_list(TRAIN_LABELS)
+
+    val_data_list = metadata_utils.split_to_list(VAL_IMAGES)
+    val_label_list = metadata_utils.split_to_list(VAL_LABELS)
+
+    country_list = list(set(train_label_list))
+    
+    training_loader = landmark_dataloader.build_dataloader(train_image_list, train_label_list, "train", 100)
+    val_loader = landmark_dataloader.build_dataloader(val_data_list, val_label_list, "train", 100)
 
     xb, yb = next(iter(training_loader))
 
