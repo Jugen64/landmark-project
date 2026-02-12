@@ -4,4 +4,4 @@ The model is trained on a subset of the Google Landmarks dataset called "Google 
 
 The Landmark-to-Country mapping is derived from the dataset published on huggingface by user Alexander Visheratin: https://huggingface.co/datasets/visheratin/google_landmarks_places
 
-readme last updated 2/12/2026
+README last updated 2/12/2026
