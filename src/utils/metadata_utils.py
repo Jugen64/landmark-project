@@ -206,7 +206,7 @@ def write_splits(train_set, val_set, test_set):
         header = next(csv_in)
 
         file_outs = {
-            (tvt, id_type): open(f"{SPLIT_DIR}/{tvt}_{id_type}.txt", "w")
+            (tvt, id_type): open(f"{SPLIT_DIR}/{tvt}/{id_type}.txt", "w")
             for tvt in TVTs
             for id_type in IDs
         }

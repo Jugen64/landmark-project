@@ -16,6 +16,6 @@ def get_eval_transform(image_size=224):
 def get_transforms(split_type):
     match split_type:
         case "train":
-            return get_train_transform
+            return get_train_transform()
         case "eval":
-            return get_eval_transform
+            return get_eval_transform()

@@ -1,3 +1,3 @@
-from .landmark_image_dataset import LandmarkDataset
+from .landmark_dataset import LandmarkDataset
 
 __all__ = ["LandmarkDataset"]
