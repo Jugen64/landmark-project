@@ -4,21 +4,30 @@ from PIL import Image
 import csv
 
 class LandmarkDataset(Dataset):
-    def __init__(self, image_path, label_path, transform=None):
+    def __init__(self, image_path, label_path, transform=None, subset=0):
         self.image_paths = []
         self.labels = []
+        count = 0
 
         with open(image_path, 'r') as image_f:
             image_reader = csv.reader(image_f)
             for row in image_reader:
                 image_name = row[0]
                 self.image_paths.append(image_name)
-        
+                count += 1
+                if count == subset:
+                    print(f"breaking!")
+                    break
+                
+        count = 0
         with open(label_path, 'r') as label_f:
             label_reader = csv.reader(label_f)
             for row in label_reader:
                 label_name = row[0]
                 self.labels.append(label_name)
+                count += 1
+                if count == subset:
+                    break
 
         self.label_set = set(self.labels)
         self.label_map = {}

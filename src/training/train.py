@@ -11,7 +11,7 @@ from collections import Counter
 from pathlib import Path
 
 from src.utils.transforms import get_transforms, get_train_transform, get_eval_transform
-from projects.landmark_project.src.datasets.landmark_dataset import LandmarkDataset
+from src.datasets.landmark_dataset import LandmarkDataset
 from src.dataloaders import landmark_dataloader
 from src.models.landmark_classifier import LandmarkClassifier
 from src.training.validate import run_validation
@@ -21,11 +21,12 @@ from src.utils import metadata_utils
 train_transform = get_train_transform()
 val_transform   = get_eval_transform()
 
-SUBSET_TEST = False 
+SUBSET_TEST = False
 VERBOSE = True
 ADAM_LR = 1e-3
 TRAINING_EPOCHS = 5
 SUBSET_EPOCHS = 50
+SUBSET_SIZE = 20
 
 DATASET_DIR = Path("~/Documents/Code/projects/datasets").expanduser()
 IMAGE_DIR = DATASET_DIR / "gldv2_micro/images"
@@ -37,15 +38,18 @@ VAL_IMAGES = SPLIT_DIR / "val_images.txt"
 VAL_LABELS = SPLIT_DIR / "val_countries.txt"
 
 
-def run_model(model, data_loader, criterion, optimizer, device, epochs):
+def train_model(model, train_data_loader, val_data_loader, criterion, optimizer, device, epochs):
+    if VERBOSE:
+        print(f"Starting training...")
     for epoch in range(epochs):
+
         model.train()
 
         running_loss = 0.0
         running_correct = 0
         total = 0
 
-        for image_batch, label_batch in data_loader:
+        for image_batch, label_batch in train_data_loader:
 
             image_batch = image_batch.to(device)
             label_batch = label_batch.to(device)
@@ -53,7 +57,7 @@ def run_model(model, data_loader, criterion, optimizer, device, epochs):
             optimizer.zero_grad()
 
             batch_distributions = model(image_batch)
-            loss = criterion(batch_predictions, label_batch)
+            loss = criterion(batch_distributions, label_batch)
 
             loss.backward()
             optimizer.step()
@@ -68,29 +72,65 @@ def run_model(model, data_loader, criterion, optimizer, device, epochs):
         epoch_acc = running_correct / total
 
         print(f"Epoch {epoch+1}/{epochs} "
-              f"| Loss: {epoch_loss:.4f} "
-              f"| Acc: {epoch_acc:.4f}")
+              f"| Training Loss: {epoch_loss:.4f} "
+              f"| Training Accuracy: {epoch_acc:.4f}")
+        
+        model.eval()
+
+        with torch.no_grad():
+
+            running_loss = 0.0
+            running_correct = 0
+            total = 0
+
+            for image_batch, label_batch in val_data_loader:
+
+                image_batch = image_batch.to(device)
+                label_batch = label_batch.to(device)
+
+                batch_distributions = model(image_batch)
+                loss = criterion(batch_distributions, label_batch)
+
+                running_loss += loss.item() * image_batch.size(0)
+                batch_predictions = batch_distributions.argmax(dim=1)
+
+                running_correct += (batch_predictions == label_batch).sum().item()
+                total += image_batch.size(0)
+
+            avg_loss = running_loss / total
+            avg_acc = running_correct / total
+
+            print(f"Epoch {epoch+1}/{epochs} "
+              f"| Validation Loss: {avg_loss:.4f} "
+              f"| Validation Accuracy: {avg_acc:.4f}")
+    
 
 def get_datasets(transform):
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print("Using device:", device)
+    
+    if SUBSET_TEST:
+        subset_size = SUBSET_SIZE
+    else:
+        subset_size = 0
 
     train_dataset = LandmarkDataset(
         image_path="data/splits/train/images.txt",
         label_path="data/splits/train/countries.txt",
-        transform=transform
+        transform=transform,
+        subset=subset_size
     )
 
     val_dataset = LandmarkDataset(
         image_path="data/splits/val/images.txt",
         label_path="data/splits/val/countries.txt",
-        transform=transform
+        transform=transform,
+        subset=subset_size
     )
 
     test_dataset = LandmarkDataset(
-        image_path="data/splits/val/images.txt",
-        label_path="data/splits/val/countries.txt",
-        transform=transform
+        image_path="data/splits/test/images.txt",
+        label_path="data/splits/test/countries.txt",
+        transform=transform,
+        subset=subset_size
     )
 
     return train_dataset, val_dataset, test_dataset
@@ -122,14 +162,20 @@ def set_up_model(weights, device, num_classes):
     model.fc = nn.Linear(model.fc.in_features, num_classes)
     model = model.to(device)
 
-    optimizer = optim.Adam(model.parameters(), lr=1e-4)
+    optimizer = optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-4)
     criterion = nn.CrossEntropyLoss()
 
     return model, optimizer, criterion
 
 def main():
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if torch.backends.mps.is_available():
+        device = torch.device("mps")
+    elif torch.cuda.is_available():
+        device = torch.device("cuda")
+    else:
+        device = torch.device("cpu")
+
     print("Using device:", device)
 
     #### vvvv ResNet18 vvvv ###
@@ -148,10 +194,6 @@ def main():
     train_sampler, train_counts, num_samples, num_classes = get_sampler(train_dataset)
     train_epochs = TRAINING_EPOCHS
     val_epochs = 1
-
-    if VERBOSE:
-        print(f"Total samples: {num_samples}")
-        print(f"Class distribution: {train_counts}")
 
     if SUBSET_TEST:
         train_dataset = Subset(train_dataset, range(20))
@@ -176,11 +218,28 @@ def main():
     )
     
     model, optimizer, criterion = set_up_model(weights, device, num_classes)
+    total_params = sum(p.numel() for p in model.parameters())
 
-    run_model(model, train_dataset_loader, criterion, optimizer, device, train_epochs)
-    run_model(model, val_dataset_loader, criterion, optimizer, device, val_epochs)
+
+    # freeze backbone
+    for param in model.parameters():
+        param.requires_grad = False
+    for param in model.layer4.parameters():
+        param.requires_grad = True
+    for param in model.fc.parameters():
+        param.requires_grad = True
+
+    if VERBOSE:
+        print(f"Total samples: {num_samples}")
+        print(f"Class distribution: {train_counts}")
+        print(f"Total params: {total_params}")
 
     
+    print(f"")
+
+    
+
+    train_model(model, train_dataset_loader, val_dataset_loader, criterion, optimizer, device, train_epochs)    
 
 
 if __name__ == "__main__":

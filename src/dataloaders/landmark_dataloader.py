@@ -1,5 +1,5 @@
 from torch.utils.data import DataLoader
-from projects.landmark_project.src.datasets import landmark_dataset
+from src.datasets import landmark_dataset
 from src.utils.transforms import get_transforms, get_train_transform, get_eval_transform
 
 from src.utils import metadata_utils
